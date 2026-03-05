@@ -191,16 +191,44 @@ def check_virtual_halt(instructions):
 # =============================================================================
 
 def read_file(path):
-
-    # TODO Person 1: implement this function
-    pass
+    # Open the source file and return (line_number, line_text) for every
+    # non-blank, non-comment line.
+    with open(path, 'r') as f:
+        lines = f.readlines()
+    result = []
+    for i, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if stripped == "" or stripped.startswith("#"):
+            continue
+        result.append((i,stripped))
+    return result
 
 
 def main():
+    # Entry point: parse arguments, run all passes, write binary output.
+    if len(sys.argv)<3:
+        print("Usage: python3 Assembler.py <input.asm> <output.txt>")
+        sys.exit(1)
 
-    # TODO Person 1: implement this function
-    pass
+    input_path= sys.argv[1]
+    output_path= sys.argv[2]
 
+    try:
+        lines= read_file(input_path)
+        label_map, instructions= first_pass(lines)
+        check_virtual_halt(instructions)
+        binary_output= second_pass(instructions, label_map)
+
+        with open(output_path, 'w') as f:
+            for binary in binary_output:
+                f.write(binary + '\n')
+
+    except AssemblerError as e:
+        print(f"Error on line {e.lineno}: {e.message}")
+        sys.exit(1)
+    except FileNotFoundError:
+        print(f"Error: File '{input_path}' not found.")
+        sys.exit(1)
 
 # =============================================================================
 # PERSON 2  —  R-TYPE AND I-TYPE INSTRUCTIONS
