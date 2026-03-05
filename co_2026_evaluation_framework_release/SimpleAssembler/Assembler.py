@@ -307,53 +307,154 @@ def encode_b(opcode, operands, offset):
 # =============================================================================
 # PERSON 4  —  U-TYPE AND J-TYPE INSTRUCTIONS
 # =============================================================================
-# Implement:
-#   encode_u()        — lui, auipc
-#   encode_j()        — jal
-#   second_pass()     — encodes every instruction using all encode_* functions
-# =============================================================================
 
 # U-type encoding table: opcode -> opcode_bits
 # Format: imm[31:12][20] | rd[5] | opcode[7]
 U_TABLE = {
-    "lui":   "0110111",
-    "auipc": "0010111",
+    "lui":"0110111",
+    "auipc":"0010111",
 }
 
 def encode_u(opcode, operands):
+    # Encode: lui, auipc
+    # Syntax: op rd, imm
+    # Format: imm[31:12] | rd | opcode
+    op= U_TABLE[opcode]
+    rd, imm_str= [o.strip() for o in operands]
+    value= int(imm_str, 0)
+    if not (-(1 << 19) <= value <= (1 << 20) - 1):
+        raise ValueError(f"Immediate {imm_str} out of range for 20-bit U-type field")
+    imm_bin= to_signed_binary(value, 20)
+    return imm_bin + get_reg(rd) + op
 
-    # TODO Person 4: implement this function
-    pass
 
-
-# J-type has no table — there is only one J-type instruction (jal).
+# J-type: only one instruction (jal).
 # Format: imm[20|10:1|11|19:12][20] | rd[5] | opcode[7]
-# Note: the 21-bit immediate is SCRAMBLED. offset must be even.
-#       After to_signed_binary(offset, 21):
-#           imm_bin[0]     = bit 20    imm_bin[1:9]   = bits 19:12
-#           imm_bin[9]     = bit 11    imm_bin[10:20] = bits 10:1
-#       Stored order in [31:12]: bit20 | bits10:1 | bit11 | bits19:12
+# Note: 21-bit immediate is SCRAMBLED; offset must be even (bit 0 implicit).
 
 def encode_j(opcode, operands, offset):
-
-    # TODO Person 4: implement this function
-    pass
+    # Encode: jal
+    # Syntax: jal rd, offset  (offset already resolved)
+    # Format: imm[20|10:1|11|19:12] | rd | opcode
+    op ="1101111"
+    rd =operands[0].strip()
+    if not (-(1 << 20) <= offset <= (1 << 20) - 2):
+        raise ValueError(f"JAL offset {offset} out of range")
+    if offset % 2 != 0:
+        raise ValueError(f"JAL offset {offset} must be even")
+    imm_bin= to_signed_binary(offset, 21)
+    imm20= imm_bin[0]      # bit 20
+    imm19_12= imm_bin[1:9]    # bits 19:12
+    imm11= imm_bin[9]      # bit 11
+    imm10_1= imm_bin[10:20]  # bits 10:1
+    encoded= imm20 + imm10_1 + imm11 + imm19_12  # 20 bits
+    return encoded + get_reg(rd) + op
 
 
 # Instruction type map — built from the encode tables above.
 OPCODE_TYPE = {}
-for _k in R_TABLE: OPCODE_TYPE[_k] = 'R'
-for _k in I_TABLE: OPCODE_TYPE[_k] = 'I'
-for _k in S_TABLE: OPCODE_TYPE[_k] = 'S'
-for _k in B_TABLE: OPCODE_TYPE[_k] = 'B'
-for _k in U_TABLE: OPCODE_TYPE[_k] = 'U'
+for _k in R_TABLE: 
+    OPCODE_TYPE[_k] = 'R'
+for _k in I_TABLE: 
+    OPCODE_TYPE[_k] = 'I'
+for _k in S_TABLE: 
+    OPCODE_TYPE[_k] = 'S'
+for _k in B_TABLE: 
+    OPCODE_TYPE[_k] = 'B'
+for _k in U_TABLE: 
+    OPCODE_TYPE[_k] = 'U'
+    
 OPCODE_TYPE['jal'] = 'J'
 
 
 def second_pass(instructions, label_map):
+    # Encode every instruction to a 32-bit binary string.
+    # Returns a list of binary strings, one per instruction.
+    if len(instructions)>MAX_INSTRUCTIONS:
+        raise AssemblerError(0, f"Program too large: {len(instructions)} instructions "
+                                f"exceed the maximum of {MAX_INSTRUCTIONS}")
 
-    # TODO Person 4: implement this function
-    pass
+    binary_output = []
+
+    for lineno,address,opcode,instr_text in instructions:
+        try:
+            opcode, operands= parse_operands(instr_text)
+
+            if opcode not in KNOWN_OPCODES:
+                raise AssemblerError(lineno, f"Unknown opcode: '{opcode}'")
+
+            # Expand nop pseudo-instruction -> addi x0, x0, 0
+            if opcode == "nop":
+                opcode= "addi"
+                operands= ["x0", "x0", "0"]
+
+            itype = OPCODE_TYPE[opcode]
+
+            if itype == 'R':
+                if len(operands) != 3:
+                    raise AssemblerError(lineno, f"'{opcode}' expects 3 operands")
+                for reg in operands:
+                    validate_register(reg, lineno)
+                binary= encode_r(opcode, operands)
+
+            elif itype== 'I':
+                if opcode in ("lw", "jalr") and len(operands) == 2:
+                    validate_register(operands[0], lineno)
+                    imm_str, rs1 = operands[1].split('(')
+                    validate_register(rs1.rstrip(')'), lineno)
+                    validate_imm(opcode, int(imm_str, 0), lineno)
+                else:
+                    if len(operands) != 3:
+                        raise AssemblerError(lineno, f"'{opcode}' expects 3 operands")
+                    validate_register(operands[0], lineno)
+                    validate_register(operands[1],lineno)
+                    validate_imm(opcode, int(operands[2],0),lineno)
+                binary = encode_i(opcode,operands)
+
+            elif itype == 'S':
+                if len(operands) != 2:
+                    raise AssemblerError(lineno, f"'{opcode}' expects 2 operands")
+                validate_register(operands[0], lineno)
+                imm_str, rs1 = operands[1].split('(')
+                validate_register(rs1.rstrip(')'), lineno)
+                validate_imm(opcode, int(imm_str, 0), lineno)
+                binary = encode_s(opcode, operands)
+
+            elif itype== 'B':
+                if len(operands) != 3:
+                    raise AssemblerError(lineno, f"'{opcode}' expects 3 operands")
+                validate_register(operands[0],lineno)
+                validate_register(operands[1],lineno)
+                offset = resolve_offset(operands[2], address, label_map, lineno)
+                validate_imm(opcode, offset, lineno)
+                binary = encode_b(opcode, operands[:2], offset)
+
+            elif itype== 'U':
+                if len(operands) != 2:
+                    raise AssemblerError(lineno, f"'{opcode}' expects 2 operands")
+                validate_register(operands[0], lineno)
+                validate_imm(opcode, int(operands[1], 0), lineno)
+                binary = encode_u(opcode, operands)
+
+            elif itype== 'J':
+                if len(operands) != 2:
+                    raise AssemblerError(lineno, f"'{opcode}' expects 2 operands")
+                validate_register(operands[0],lineno)
+                offset =resolve_offset(operands[1],address,label_map,lineno)
+                validate_imm(opcode,offset,lineno)
+                binary= encode_j(opcode, [operands[0]],offset)
+
+            if len(binary)!=32:
+                raise AssemblerError(lineno, f"Encoder produced {len(binary)} bits for '{opcode}'")
+
+            binary_output.append(binary)
+
+        except AssemblerError:
+            raise
+        except Exception as e:
+            raise AssemblerError(lineno str(e))
+
+    return binary_output
 
 
 # =============================================================================
