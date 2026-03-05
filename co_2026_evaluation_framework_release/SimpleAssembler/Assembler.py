@@ -248,44 +248,60 @@ def encode_i(opcode, operands):
 # =============================================================================
 # PERSON 3  —  S-TYPE AND B-TYPE INSTRUCTIONS
 # =============================================================================
-# Implement:
-#   encode_s()   — sw
-#   encode_b()   — beq, bne, blt, bge, bltu, bgeu
-# =============================================================================
 
 # S-type encoding table: opcode -> (opcode_bits, funct3)
 # Format: imm[11:5][7] | rs2[5] | rs1[5] | funct3[3] | imm[4:0][5] | opcode[7]
 # Note: the 12-bit immediate is SPLIT — upper 7 bits at [31:25], lower 5 at [11:7]
+
 S_TABLE = {
     "sw": ("0100011", "010"),
 }
 
 def encode_s(opcode, operands):
-
-    # TODO Person 3: implement this function
-    pass
+    # Encode: sw
+    # Syntax: sw rs2, imm(rs1)
+    # Format: imm[11:5] | rs2 | rs1 | funct3 | imm[4:0] | opcode
+    op, funct3 = S_TABLE[opcode]
+    rs2= operands[0].strip()
+    mem= operands[1].strip()
+    imm_str, rs1 = mem.split('(')
+    rs1= rs1.rstrip(')')
+    imm_bin= parse_imm(imm_str, 12, signed=True)
+    imm_upper= imm_bin[0:7]   # bits 11:5
+    imm_lower= imm_bin[7:12]  # bits  4:0
+    return imm_upper + get_reg(rs2) + get_reg(rs1) + funct3 + imm_lower + op
 
 
 # B-type encoding table: opcode -> (opcode_bits, funct3)
 # Format: imm[12|10:5][7] | rs2[5] | rs1[5] | funct3[3] | imm[4:1|11][5] | opcode[7]
-# Note: the 13-bit immediate is SCRAMBLED across two non-contiguous fields.
-#       offset must be even (bit 0 is implicit, not stored).
-#       After to_signed_binary(offset, 13):
-#           imm_bin[0]    = bit 12   imm_bin[1]    = bit 11
-#           imm_bin[2:8]  = bits 10:5               imm_bin[8:12] = bits 4:1
+# Note: 13-bit immediate is SCRAMBLED; offset must be even (bit 0 implicit).
 B_TABLE = {
-    "beq":  ("1100011", "000"),
-    "bne":  ("1100011", "001"),
-    "blt":  ("1100011", "100"),
-    "bge":  ("1100011", "101"),
-    "bltu": ("1100011", "110"),
-    "bgeu": ("1100011", "111"),
+    "beq":("1100011", "000"),
+    "bne":("1100011", "001"),
+    "blt":("1100011", "100"),
+    "bge":("1100011", "101"),
+    "bltu":("1100011", "110"),
+    "bgeu":("1100011", "111"),
 }
 
 def encode_b(opcode, operands, offset):
-
-    # TODO Person 3: implement this function
-    pass
+    # Encode: beq, bne, blt, bge, bltu, bgeu
+    # Syntax: op rs1, rs2, offset  (offset already resolved)
+    # Format: imm[12|10:5] | rs2 | rs1 | funct3 | imm[4:1|11] | opcode
+    op, funct3 = B_TABLE[opcode]
+    rs1, rs2= [o.strip() for o in operands]
+    if not (-4096 <= offset <= 4094):
+        raise ValueError(f"Branch offset {offset} out of range")
+    if offset % 2 != 0:
+        raise ValueError(f"Branch offset {offset} must be even")
+    imm_bin= to_signed_binary(offset, 13)
+    imm12= imm_bin[0]      # bit 12
+    imm11= imm_bin[1]      # bit 11
+    imm105= imm_bin[2:8]    # bits 10:5
+    imm41= imm_bin[8:12]   # bits  4:1
+    inst_upper= imm12 + imm105  # 7 bits -> [31:25]
+    inst_lower= imm41 + imm11   # 5 bits -> [11:7]
+    return inst_upper + get_reg(rs2) + get_reg(rs1) + funct3 + inst_lower + op
 
 
 # =============================================================================
