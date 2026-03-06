@@ -253,9 +253,12 @@ R_TABLE = {
 }
 
 def encode_r(opcode, operands):
-
-    # TODO Person 2: implement this function
-    pass
+    # Encode: add, sub, sll, slt, sltu, xor, srl, or, and
+    # Syntax: op rd, rs1, rs2
+    # Format: funct7 | rs2 | rs1 | funct3 | rd | opcode
+    op, funct3, funct7 = R_TABLE[opcode]
+    rd, rs1, rs2 = [o.strip() for o in operands]
+    return funct7 + get_reg(rs2) + get_reg(rs1) + funct3 + get_reg(rd) + op
 
 
 # I-type encoding table: opcode -> (opcode_bits, funct3)
@@ -268,9 +271,20 @@ I_TABLE = {
 }
 
 def encode_i(opcode, operands):
-
-    # TODO Person 2: implement this function
-    pass
+    # Encode: lw, addi, sltiu, jalr
+    # Syntax A (addi, sltiu): op rd, rs1, imm
+    # Syntax B (lw, jalr): op rd, imm(rs1) or op rd, rs1, imm
+    # Format: imm[11:0] | rs1 | funct3 | rd | opcode
+    op, funct3 = I_TABLE[opcode]
+    if len(operands)==2:
+        rd = operands[0].strip()
+        mem = operands[1].strip()
+        imm_str, rs1 = mem.split('(')
+        rs1 = rs1.rstrip(')')
+    else:
+        rd, rs1, imm_str = [o.strip() for o in operands]
+    imm_bin = parse_imm(imm_str, 12, signed=True)
+    return imm_bin + get_reg(rs1) + funct3 + get_reg(rd) + op
 
 
 # =============================================================================
