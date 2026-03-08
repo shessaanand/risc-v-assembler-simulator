@@ -1,24 +1,28 @@
 from errors import AssemblerError
-from tokenizer import extractLabel
+from parsingF import extractlabel
 
-def buildLabelMap(lines):
-    labelMap = {}
-    instructionList = []
-    currentAddr = 0x0
-    for lineNumber, rawLine in lines:
-        label, instrText = extractLabel(rawLine)
+def buildLMap(lines):
+    labelmap = {}
+    iList = []
+    currentadd = 0x0
+    for lineno, rawline in lines:
+        label, instrtxt = extractlabel(rawline)
         if label:
-            if label in labelMap: raise AssemblerError(lineNumber, f"Duplicate label: '{label}'")
-            labelMap[label] = currentAddr
-        if instrText == "": continue
-        tokens = instrText.replace(',', ' ').split()
+            if label in labelmap: 
+                raise AssemblerError(lineno, f"Label is duplicate: '{label}'")
+            labelmap[label] = currentadd
+        if instrtxt == "": 
+            continue
+        tokens = instrtxt.replace(',', ' ').split()
         inst = tokens[0].lower()
-        instructionList.append((lineNumber, currentAddr, inst, instrText))
-        currentAddr += 4
-    return labelMap, instructionList
-def checkVirtualHalt(instructionList):
-    if not instructionList: raise AssemblerError(0, "No instructions found in program")
-    for lineNumber, addr, inst, text in instructionList:
+        iList.append((lineno, currentadd, inst, instrtxt))
+        currentadd += 4
+    return labelmap, iList
+
+def checkVhalt(iList):
+    if not iList: 
+        raise AssemblerError(0, "No instructions found in program")
+    for lineno, addr, inst, text in iList:
         tokens = text.replace(',', ' ').split()
         if (inst == "beq"
                 and len(tokens) >= 4
@@ -26,4 +30,4 @@ def checkVirtualHalt(instructionList):
                 and tokens[2].lower() in ("zero", "x0")
                 and tokens[3] in ("0", "0x0", "0x00000000", "0b0")):
             return
-    raise AssemblerError(0, "Missing Virtual Halt instruction (beq zero, zero, 0)")
+    raise AssemblerError(0, "Virtual halt instruction is missing - (beq zero, zero, 0)")
