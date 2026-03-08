@@ -1,22 +1,14 @@
-from encode_r import rTypeTable
-from encode_i import iTypeTable
-from encode_s import sTypeTable
-from encode_b import bTypeTable
-from encode_u import uTypeTable
+from R_I_encoding import rTypeTable, iTypeTable
+from B_S_encoding import sTypeTable, bTypeTable
+from U_J_encoding import uTypeTable
 
-maxInstructions=64 
-knownOpcodes = {
-    "add", "sub", "sll", "slt", "sltu", "xor", "srl", "or", "and",
-    "addi", "lw", "sltiu", "jalr",
-    "sw",
-    "beq", "bne", "blt", "bge", "bltu", "bgeu",
-    "lui", "auipc",
-    "jal",
-    "nop",
-}
+maxi=64 
+knownopcodes = { "add", "sub", "sll", "slt", "sltu", "xor", "srl", "or", "and",
+    "addi", "lw", "sltiu", "jalr", "sw", "beq", "bne", "blt", "bge", "bltu", "bgeu",
+    "lui", "auipc", "jal", "nop" }
 
 opcodeType = {}
-for _k in rTypeTable: 
+for _k in rTypeTable:
   opcodeType[_k] = 'R'
 for _k in iTypeTable: 
   opcodeType[_k] = 'I'
