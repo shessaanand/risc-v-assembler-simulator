@@ -25,11 +25,11 @@ def packBType(inst, ops, boff):
 
 def packSType(inst, ops):
     op, funct3 = sTypeTable[inst]
-    rs2 = ops[0].strip()
-    mr= ops[1].strip()
+    rs2= ops[0].strip()
+    mr = ops[1].strip()
     immstr, rs1 = mr.split('(')
-    rs1 = rs1.rstrip(')')
-    immb = pimm(immstr, 12, signed=True)
+    rs1= rs1.rstrip(')')
+    immb= pimm(immstr, 12, signed=True)
     immu = immb[0:7]
     imml = immb[7:12]
-    return immu + getRcode(rs2) + getRcode(rs1) + funct3 + imml + op
+    return immu+ getRcode(rs2)+ getRcode(rs1)+ funct3+ imml + op
