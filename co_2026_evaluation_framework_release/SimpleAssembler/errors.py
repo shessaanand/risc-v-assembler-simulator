@@ -1,5 +1,5 @@
 class AssemblerError(Exception):
-    def __init__(self,lineNumber,message):
-        self.lineNumber=lineNumber
+    def __init__(self,lineno,message):
+        self.lineno=lineno
         self.message=message
-        super().__init__(f"Line {lineNumber}: {message}")
+        super().__init__(f"Line {lineno}: {message}")
