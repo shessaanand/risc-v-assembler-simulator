@@ -5,10 +5,11 @@ JAL_OPCODE = "1101111"
 
 def packJType(inst, operands, jumpOffset):
     rd = operands[0].strip()
-    if not (-(1 << 20) <= jumpOffset<= (1 << 20)-2): 
-      raise ValueError(f"JAL offset {jumpOffset} out of range")
-    if jumpOffset % 2 != 0: 
-      raise ValueError(f"JAL offset {jumpOffset} must be even")
+    if not (-2**20<=jumpOffset<=2**20-2):
+        raise ValueError(f"JAL offset {jumpOffset} out of range")
+    if jumpOffset % 2 != 0:
+        raise ValueError(f"JAL offset {jumpOffset} must be even")
+
         
     immBin= signedbinary(jumpOffset, 21)
     imm20 =immBin[0] 
@@ -22,10 +23,13 @@ uTypeTable = {"lui": "0110111", "auipc": "0010111"}
 
 def packUType(inst, operands):
     op = uTypeTable[inst]
-    rd, immStr = [o.strip() for o in operands]
+    rd,immStr = operands
+    rd=rd.strip()
+    immStr= immStr.strip()
     immValue = int(immStr, 0)
     encoded = immValue >> 12
-    if not (-(1<<19)<=encoded<=(1<<19)-1):
+    
+    if not (0 <= encoded <= (1<<20) - 1):
         raise ValueError("Immediate out of range")
     immBin=signedbinary(encoded,20)
-    return immBin+getRcode(rd)+ op
+    return immBin+getRcode(rd)+op
