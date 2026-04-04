@@ -24,10 +24,19 @@ class CPU:
         return (word>>lo) & mask
 
     def decodeR(self,word): #sang will do
-        
+        rd = self.getBits(word,11,7)
+        funct3 = self.getBits(word,14,12)
+        rs1 = self.getBits(word,19,15)
+        rs2 = self.getBits(word,24,20)
+        funct7 = self.getBits(word,31,25)
+        return rd,funct3,rs1,rs2,funct7
 
     def decodeI(self,word): #sang will do
-       
+       rd = self.getBits(word,11,7)
+       funct3 = self.getBits(word,14,12)
+       rs1 = self.getBits(word,19,15)
+       imm = self.sext(self.getBits(word,31,20),12)
+       return rd,funct3,rs1,imm
        
     def decodeS(self,word): #sujeet will do
         
