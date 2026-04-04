@@ -67,29 +67,31 @@ class CPU:
         # R-type  opcode 0110011
         if opcode==0b0110011: 
             rd,funct3,rs1,rs2,funct7=self.decodeR(word)
-            a =self.sext(self.rf.read(rs1),32)
+            a=self.sext(self.rf.read(rs1),32)
             b=self.sext(self.rf.read(rs2),32)
-            ua =self.rf.read(rs1)
+            ua=self.rf.read(rs1)
             ub=self.rf.read(rs2)
             shamt=ub & 0x1F
             if funct3==0b000 and funct7==0b0000000: 
                 result=a+b
             elif funct3==0b000 and funct7==0b0100000: 
                 result=a-b
-            elif #...
-                result=#...
-            elif #...
-                result=#...
-            elif #...
-                result=#...
-            elif #...
-                result=#...
-            elif #...
-                result=#...
-            elif #...
-                result=#...
-            elif #...
-                result=#...
+            elif funct3==0b001 and funct7==0b0000000:
+                result=a<<shamt
+            elif funct3==0b010 and funct7==0b0000000:
+                result=1 if a<b else 0
+            elif funct3==0b011 and funct7==0b0000000:
+                result=1 if ua<ub else 0
+            elif funct3==0b100 and funct7==0b0000000:
+                result=a^b
+            elif funct3==0b101 and funct7==0b0000000:
+                result=ua>>shamt
+            elif funct3==0b101 and funct7==0b0100000:
+                result=a>>shamt
+            elif funct3==0b110 and funct7==0b0000000:
+                result=a | b
+            elif funct3==0b111 and funct7==0b0000000:
+                result=a & b
             else: 
                 raise SimulatorError(idx,f"Unknown R-type funct3={funct3} funct7={funct7}")
             self.rf.write(rd,result)
@@ -98,20 +100,45 @@ class CPU:
         elif opcode==0b0000011: 
             rd,funct3,rs1,imm=self.decodeI(word)
             addr=(self.rf.read(rs1)+imm) & 0xFFFFFFFF
-            if #...
-                #...
+            if funct3==0b000:
+                result=self.sext(self.mem.readByte(addr),8)
+            elif funct3==0b001:
+                result=self.sext(self.mem.readHalf(addr),16)
+            elif funct3==0b010:
+                result=self.mem.readWord(addr)
+            elif funct3==0b100:
+                result=self.mem.readByte(addr)
+            elif funct3==0b101:
+                result=self.mem.readHalf(addr)
             else: 
                 raise SimulatorError(idx,f"Unknown load funct3={funct3}")
+            self.rf.write(rd,result)
 
-        # I-type ALU  opcode 0010011
+        # I-type ALU opcode 0010011
         elif opcode==0b0010011: 
             rd,funct3,rs1,imm=self.decodeI(word)
             a =self.sext(self.rf.read(rs1),32)
             ua=self.rf.read(rs1)
-            if #... 
-                result=#...
-            elif #...: 
-                result=#...
+            shamt=imm & 0x1F
+            funct7=self.getBits(word,31,25)
+            if funct3==0b000: 
+                result=a+imm
+            elif funct3==0b010: 
+                result=1 if a<imm else 0
+            elif funct3==0b011:
+                result=1 if ua<(imm & 0xFFFFFFFF) else 0
+            elif funct3==0b100:
+                result=a^imm
+            elif funct3==0b110:
+                result=a | imm
+            elif funct3==0b111:
+                result=a & imm
+            elif funct3==0b001 and funct7==0b0000000:
+                result=a<<shamt
+            elif funct3==0b101 and funct7==0b0000000:
+                result=ua>>shamt
+            elif funct3==0b101 and funct7==0b0100000:
+                result=a>>shamt
             else: 
                 raise SimulatorError(idx,f"Unknown I-ALU funct3={funct3}")
             self.rf.write(rd,result)
@@ -119,10 +146,10 @@ class CPU:
         # jalr  opcode 1100111
         elif opcode==0b1100111: 
             rd,funct3,rs1,imm=self.decodeI(word)
-            retAddr=#...
-            target =#...
+            retAddr=self.pc+4
+            target=(self.rf.read(rs1)+imm) & 0xFFFFFFFE
             self.rf.write(rd,retAddr)
-            nextPc =#...
+            nextPc=target & 0xFFFFFFFF
 
         # S-type  opcode 0100011
         elif opcode==0b0100011: 
