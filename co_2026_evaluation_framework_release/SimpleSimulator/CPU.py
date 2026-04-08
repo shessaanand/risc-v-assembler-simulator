@@ -151,40 +151,47 @@ class CPU:
             self.rf.write(rd,retAddr)
             nextPc=target & 0xFFFFFFFF
 
-        # S-type  opcode 0100011
-        elif opcode==0b0100011: 
+        # S-type opcode 0100011 
+        elif opcode==0b0100011:
             funct3,rs1,rs2,imm=self.decodeS(word)
             addr=(self.rf.read(rs1)+imm) & 0xFFFFFFFF
-            if #...:
-                #...
-            else: 
+            if funct3==0b000:
+                val=self.rf.read(rs2)
+                val=val&0xFF
+                self.mem.write(addr,val)
+            elif funct3==0b001:
+                val=self.rf.read(rs2)
+                val=val&0xFFFF
+                self.mem.write(addr,val)
+            elif funct3==0b010:
+                val=self.rf.read(rs2)
+                self.mem.write(addr,val)
+            else:
                 raise SimulatorError(idx,f"Unknown store funct3={funct3}")
 
         # B-type  opcode 1100011
-        elif opcode==0b1100011: 
+        elif opcode==0b1100011:
             funct3,rs1,rs2,imm=self.decodeB(word)
             a =self.sext(self.rf.read(rs1),32)
             b =self.sext(self.rf.read(rs2),32)
             ua=self.rf.read(rs1)
             ub=self.rf.read(rs2)
-            if #...:
-                taken=#...  
-            if   #... 
-               taken=#...
-            elif #...: 
-                taken=#...
-            elif #...: 
-                taken=#...
-            elif #... 
-                taken=#...
-            elif #...
-                taken=#...
-            elif #... 
-               taken=#...
-            else: 
+            if funct3==0b000:
+                key=a==b
+            elif funct3==0b001:
+                key=a!=b
+            elif funct3==0b101:
+                key=a>=b
+            elif funct3==0b100:
+                key=a<b
+            elif funct3==0b111:
+                key=ua>=ub
+            elif funct3==0b110:
+                key=ua<ub
+            else:
                 raise SimulatorError(idx,f"Unknown branch funct3={funct3}")
-            if taken:
-                #...
+            if key==True:
+                nextPc=(self.pc+imm)&0xFFFFFFFF
 
         # U-type LUI  opcode 0110111
         elif opcode==0b0110111:
