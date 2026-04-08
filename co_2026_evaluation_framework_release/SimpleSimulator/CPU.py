@@ -38,8 +38,17 @@ class CPU:
        imm = self.sext(self.getBits(word,31,20),12)
        return rd,funct3,rs1,imm
        
-    def decodeS(self,word): #sujeet will do
-        
+    def decodeS(self,word):
+        funct3= self.getBits(word,14,12)
+        rs1= self.getBits(word,19,15)
+        rs2= self.getBits(word,24,20)
+        iu= self.getBits(word,31,25)
+        il= self.getBits(word,11,7)
+        i1= iu<<5
+        i2= i1 | il
+        i3= self.sext(i2,12)
+        imm = i3
+        return funct3, rs1, rs2, imm
 
     def decodeB(self,word):
         funct3= self.getBits(word,14,12)
