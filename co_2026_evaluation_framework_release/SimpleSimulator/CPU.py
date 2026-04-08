@@ -41,7 +41,21 @@ class CPU:
     def decodeS(self,word): #sujeet will do
         
 
-    def decodeB(self,word): #sujeet will do
+    def decodeB(self,word):
+        funct3= self.getBits(word,14,12)
+        rs1= self.getBits(word,19,15)
+        rs2= self.getBits(word,24,20)
+        i12 = (word>>31) & 1
+        i11 = (word>>7) & 1
+        i41= self.getBits(word,11,8)
+        i105= self.getBits(word,30,25)
+        i1= i12<<12
+        i2= i11<<11
+        i3= i41<<1
+        i4= i105<<5
+        final=i1|i2|i3|i4
+        imm= self.sext(final,13)
+        return funct3, rs1, rs2, imm
         
 
     def decodeU(self,word): #shessaa will do
