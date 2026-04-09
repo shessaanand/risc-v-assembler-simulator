@@ -2,59 +2,52 @@ import sys
 from memory import Memory,SimulatorError
 from CPU import CPU
 
-# puneet's work:
-
 def main():
-   
-    # Implement the simulator driver logic here.
-    
-    # Steps to follow:
-    
-    # 1. Check command line arguments
-    #    - Minimum required: input file and output file
-    #    - Optional: readable output file
-    #    - If arguments missing, print usage message and exit
-    
-    # 2. Read input file
-    #    - Open input file
-    #    - Read all binary instruction lines
-    
-    # 3. Initialize simulator
-    #    - Create Memory object using binary lines
-    #    - Create CPU object using memory
-    
-    # 4. Execute simulation loop
-    #    - Run CPU step repeatedly
-    #    - Stop when:
-    #        a) virtual halt occurs
-    #        b) error occurs
-    #        c) max step limit reached
-    
-    # 5. Track execution
-    #    - Maintain step counter
-    #    - Store trace output using cpu.traceLine()
-    
-    # 6. Handle errors
-    #    - Catch SimulatorError
-    #    - Stop execution
-    
-    # 7. Dump memory contents
-    #    - After successful execution
-    #    - Append memory dump to output
-    
-    # 8. Write output file
-    #    - Write trace + memory dump
-    
-    # 9. Write readable file (optional)
-    #    - If readable file path provided
-    #    - Write same output
-    
-    # 10. Handle exceptions
-    #     - File not found
-    #     - Simulator errors
+    if len(sys.argv)<3:
+        sys.exit(1)
+    input_path=sys.argv[1]
+    output_path=sys.argv[2]
+    readable_path=sys.argv[3] if len(sys.argv)>3 else None
 
+    try:
+        with open(input_path,'r') as f:
+            lines=f.readlines()
 
+        mem_unit=Memory(lines)
+        processor=CPU(mem_unit)
 
+        history=[]
+        ticks=0
+        limit=100000
+
+        while ticks<limit:
+            active=processor.step()
+            history.append(processor.traceLine())
+            ticks+=1
+            if not active:
+                break
+
+        if ticks>=limit:
+            raise SimulatorError(0,"Max step limit reached")
+
+        final_mem=mem_unit.dumpData()
+        output_lines=history+final_mem
+
+        with open(output_path,'w') as f:
+            for line in output_lines:
+                f.write(line+"\n")
+
+        if readable_path:
+            with open(readable_path,'w') as f:
+                for line in output_lines:
+                    f.write(line+"\n")
+
+    except SimulatorError as e:
+        print(f"Error on line {e.lineno}: {e.message}")
+        sys.exit(1)
+    except FileNotFoundError:
+        print(f"Error: File '{input_path}' not found")
+        sys.exit(1)
 
 if __name__=="__main__":
     main()
