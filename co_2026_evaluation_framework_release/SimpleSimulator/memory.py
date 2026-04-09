@@ -1,6 +1,3 @@
-# Three separate memory regions
-# All accesses are 32-bit word aligned.
-
 progMemStart =0x00000000
 progMemEnd =0x000000FF
 stackMemStart =0x00000100
@@ -9,14 +6,14 @@ dataMemStart=0x00010000
 dataMemEnd=0x0001007F
 
 
-class SimulatorError(Exception): #shessaa will do
+class SimulatorError(Exception):
     def __init__(self,lineno,message):
         self.lineno=lineno
         self.message=message
         super().__init__(f"Line {lineno}: {message}")
 
 
-class Memory: #shessaa will do
+class Memory: 
     def __init__(self,binaryLines):
         self.imem=[]
         for i,line in enumerate(binaryLines):
@@ -57,10 +54,21 @@ class Memory: #shessaa will do
         else:
             raise SimulatorError(0,f"Memory write out of range: 0x{addr:08X}")
 
+    def readWord(self, addr):
+        return self.read(addr)
+
+    def readByte(self, addr):
+        word=self.read(addr & 0xFFFFFFFC)
+        return (word>>((addr & 3)*8)) & 0xFF
+    
+    def readHalf(self, addr):
+        word=self.read(addr & 0xFFFFFFFE)
+        return (word>>((addr&2)*8))& 0xFFFF
+    
     def dumpData(self):
         lines=[]
         for i in range(32):
             addr=dataMemStart+(i*4)
             val =self.dmem.get(addr,0)
-            lines.append(f"0x{addr:08X}:0b{format(val & 0xFFFFFFFF,'032b')}")
+            lines.append(f"0x{addr:08X}:{format(val & 0xFFFFFFFF,'032b')}")
         return lines
