@@ -77,13 +77,12 @@ class CPU:
         imm=self.sext((imm20<<20)|(imm1912<<12)|(imm11<<11)|(imm101<<1),21)
         return rd,imm
 
-    def step(self): #shessaa will do
+    def step(self): #do the corresponding instructions
         word =self.mem.fetchInstr(self.pc)
         opcode=self.getBits(word,6,0)
         nextPc=self.pc+4
         idx=(self.pc>>2)+1
         
-        # R-type  opcode 0110011
         if opcode==0b0110011: 
             rd,funct3,rs1,rs2,funct7=self.decodeR(word)
             a=self.sext(self.rf.read(rs1),32)
@@ -115,7 +114,6 @@ class CPU:
                 raise SimulatorError(idx,f"Unknown R-type funct3={funct3} funct7={funct7}")
             self.rf.write(rd,result)
 
-        # I-type loads  opcode 0000011
         elif opcode==0b0000011: 
             rd,funct3,rs1,imm=self.decodeI(word)
             addr=(self.rf.read(rs1)+imm) & 0xFFFFFFFF
@@ -133,7 +131,6 @@ class CPU:
                 raise SimulatorError(idx,f"Unknown load funct3={funct3}")
             self.rf.write(rd,result)
 
-        # I-type ALU opcode 0010011
         elif opcode==0b0010011: 
             rd,funct3,rs1,imm=self.decodeI(word)
             a =self.sext(self.rf.read(rs1),32)
@@ -162,7 +159,6 @@ class CPU:
                 raise SimulatorError(idx,f"Unknown I-ALU funct3={funct3}")
             self.rf.write(rd,result)
 
-        # jalr  opcode 1100111
         elif opcode==0b1100111: 
             rd,funct3,rs1,imm=self.decodeI(word)
             retAddr=self.pc+4
@@ -170,7 +166,6 @@ class CPU:
             self.rf.write(rd,retAddr)
             nextPc=target & 0xFFFFFFFF
 
-        # S-type opcode 0100011 
         elif opcode==0b0100011:
             funct3,rs1,rs2,imm=self.decodeS(word)
             addr=(self.rf.read(rs1)+imm) & 0xFFFFFFFF
@@ -188,7 +183,6 @@ class CPU:
             else:
                 raise SimulatorError(idx,f"Unknown store funct3={funct3}")
 
-        # B-type  opcode 1100011
         elif opcode==0b1100011:
             if funct3==0b000 and rs1==0 and rs2==0 and imm==0:
                 return False
@@ -214,17 +208,14 @@ class CPU:
             if key==True:
                 nextPc=(self.pc+imm)&0xFFFFFFFF
 
-        # U-type LUI  opcode 0110111
         elif opcode==0b0110111:
             rd,imm=self.decodeU(word)
             self.rf.write(rd,imm)
 
-        # U-type AUIPC  opcode 0010111
         elif opcode==0b0010111:
             rd,imm=self.decodeU(word)
             self.rf.write(rd,self.pc+imm)
 
-        # J-type JAL  opcode 1101111
         elif opcode==0b1101111:
             rd,imm=self.decodeJ(word)
             self.rf.write(rd,self.pc+4)
