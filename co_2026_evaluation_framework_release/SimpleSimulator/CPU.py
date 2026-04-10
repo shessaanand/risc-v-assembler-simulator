@@ -1,7 +1,6 @@
 from memory import SimulatorError
 from registerfile import RegisterFile
 
-
 class CPU:
 
     def __init__(self,mem):
@@ -27,12 +26,11 @@ class CPU:
         return rd,funct3,rs1,rs2,funct7
 
     def decodeI(self,word): #sang will do
-        rd = self.getBits(word,11,7)
-        funct3 = self.getBits(word,14,12)
-        rs1 = self.getBits(word,19,15)
-        imm=self.getBits(word,31,12)<<12
-        imm=self.sext(imm,32)
-       return rd,funct3,rs1,imm
+        rd=self.getBits(word,11,7)
+        funct3 =self.getBits(word,14,12)
+        rs1 =self.getBits(word,19,15)
+        imm =self.sext(self.getBits(word, 31, 20), 12)
+        return rd,funct3,rs1,imm
        
     def decodeS(self,word):
         funct3= self.getBits(word,14,12)
@@ -64,8 +62,8 @@ class CPU:
         
 
     def decodeU(self,word): #shessaa will do
-        rd =self.getBits(word,11, 7)
-        imm=self.sext(self.(word,31,12),20)<<12
+        rd =self.getBits(word,11,7)
+        imm=self.getBits(word,31,12)<<12
         return rd,imm
 
     def decodeJ(self,word): #shessaa will do
@@ -182,11 +180,11 @@ class CPU:
                 self.mem.write(addr,val)
             else:
                 raise SimulatorError(idx,f"Unknown store funct3={funct3}")
-
+            
         elif opcode==0b1100011:
+            funct3,rs1,rs2,imm=self.decodeB(word)
             if funct3==0b000 and rs1==0 and rs2==0 and imm==0:
                 return False
-            funct3,rs1,rs2,imm=self.decodeB(word)
             a =self.sext(self.rf.read(rs1),32)
             b =self.sext(self.rf.read(rs2),32)
             ua=self.rf.read(rs1)
