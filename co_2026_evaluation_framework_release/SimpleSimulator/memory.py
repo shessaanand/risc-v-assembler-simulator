@@ -72,3 +72,4 @@ class Memory:
             val =self.dmem.get(addr,0)
             lines.append(f"0x{addr:08X}:0b{format(val & 0xFFFFFFFF,'032b')}")
         return lines
+        
