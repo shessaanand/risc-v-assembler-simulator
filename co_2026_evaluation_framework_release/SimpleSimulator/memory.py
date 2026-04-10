@@ -58,7 +58,7 @@ class Memory:
         return (word>>((addr & 3)*8)) & 0xFF
     
     def readHalf(self, addr):
-        word=self.read(addr & 0xFFFFFFFE)
+        word=self.read(addr & 0xFFFFFFFC)
         return (word>>((addr&2)*8))& 0xFFFF
     
     def dumpData(self):
