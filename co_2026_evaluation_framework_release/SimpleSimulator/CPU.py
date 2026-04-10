@@ -192,10 +192,14 @@ class CPU:
             funct3,rs1,rs2,imm=self.decodeB(word)
             if funct3==0b000 and rs1==0 and rs2==0 and imm==0:
                 return False
-            a =self.sext(self.rf.read(rs1),32) & 0xFFFFFFFF
-            b =self.sext(self.rf.read(rs2),32) & 0xFFFFFFFF
-            ua=self.rf.read(rs1)
-            ub=self.rf.read(rs2)
+            a=self.rf.read(rs1)
+            b=self.rf.read(rs2)
+            if a & 0x80000000:
+                a-=0x100000000
+            if b & 0x80000000:
+                b-= 0x100000000
+            ua= self.rf.read(rs1)
+            ub= self.rf.read(rs2)
             if funct3==0b000:
                 key=a==b
             elif funct3==0b001:
