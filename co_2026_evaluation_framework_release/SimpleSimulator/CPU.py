@@ -176,7 +176,6 @@ class CPU:
                 mask=0xFF << shift
                 new=(old & ~mask) | ((val & 0xFF) << shift)
                 self.mem.write(base,new)
-
             elif funct3==0b001:
                 base=addr & 0xFFFFFFFC
                 old =self.mem.readWord(base)
@@ -184,10 +183,8 @@ class CPU:
                 mask= 0xFFFF<<shift
                 new=(old & ~mask)|((val & 0xFFFF) << shift)
                 self.mem.write(base,new)
-
             elif funct3==0b010:
                 self.mem.write(addr,val)
-
             else:
                 raise SimulatorError(idx,f"Unknown store funct3={funct3}")
 
@@ -195,8 +192,8 @@ class CPU:
             funct3,rs1,rs2,imm=self.decodeB(word)
             if funct3==0b000 and rs1==0 and rs2==0 and imm==0:
                 return False
-            a =self.sext(self.rf.read(rs1),32)
-            b =self.sext(self.rf.read(rs2),32)
+            a =self.sext(self.rf.read(rs1),32) & 0xFFFFFFFF
+            b =self.sext(self.rf.read(rs2),32) & 0xFFFFFFFF
             ua=self.rf.read(rs1)
             ub=self.rf.read(rs2)
             if funct3==0b000:
@@ -215,20 +212,16 @@ class CPU:
                 raise SimulatorError(idx,f"Unknown branch funct3={funct3}")
             if key==True:
                 nextPc=(self.pc+imm)&0xFFFFFFFF
-
         elif opcode==0b0110111:
             rd,imm=self.decodeU(word)
             self.rf.write(rd,imm)
-
         elif opcode==0b0010111:
             rd,imm=self.decodeU(word)
             self.rf.write(rd,self.pc+imm)
-
         elif opcode==0b1101111:
             rd,imm=self.decodeJ(word)
             self.rf.write(rd,self.pc+4)
             nextPc=(self.pc+imm) & 0xFFFFFFFF
-
         else:
             raise SimulatorError(idx,f"Unknown opcode: 0b{opcode:07b}")
 
