@@ -28,6 +28,7 @@ def main():
                 if not active:
                     break
             except SimulatorError as e:
+                # Write the history up to the error
                 with open(output_path,'w') as f:
                     for line in history:
                         f.write(line+"\n")
