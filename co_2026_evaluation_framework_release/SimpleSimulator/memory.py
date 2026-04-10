@@ -43,6 +43,8 @@ class Memory:
     def write(self,addr,value):
         addr &= 0xFFFFFFFF
         value &= 0xFFFFFFFF
+        if addr % 4 != 0:
+            raise SimulatorError(0,f"Misaligned memory write: 0x{addr:08X}")
         if stackMemStart<=addr<=stackMemEnd:
             self.smem[addr]=value
         elif dataMemStart<=addr<=dataMemEnd:
@@ -51,14 +53,16 @@ class Memory:
             raise SimulatorError(0,f"Memory write out of range: 0x{addr:08X}")
 
     def readWord(self, addr):
-        return self.read(addr)
+        if addr % 4 != 0:
+            raise SimulatorError(0,f"Misaligned memory read: 0x{addr:08X}")
+        return self.read(addr & 0xFFFFFFFC)
 
     def readByte(self, addr):
         word=self.read(addr & 0xFFFFFFFC)
         return (word>>((addr & 3)*8)) & 0xFF
     
     def readHalf(self, addr):
-        word=self.read(addr & 0xFFFFFFFC)
+        word=self.read(addr & 0xFFFFFFFC)   
         return (word>>((addr&2)*8))& 0xFFFF
     
     def dumpData(self):
