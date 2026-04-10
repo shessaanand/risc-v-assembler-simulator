@@ -1,8 +1,3 @@
-# Fetch-decode-execute. 
-#CPU.py uses memory.py and registerfile.py
-
-# step() returns False on virtual halt, True otherwise.
-
 from memory import SimulatorError
 from registerfile import RegisterFile
 
@@ -32,10 +27,11 @@ class CPU:
         return rd,funct3,rs1,rs2,funct7
 
     def decodeI(self,word): #sang will do
-       rd = self.getBits(word,11,7)
-       funct3 = self.getBits(word,14,12)
-       rs1 = self.getBits(word,19,15)
-       imm = self.sext(self.getBits(word,31,20),12)
+        rd = self.getBits(word,11,7)
+        funct3 = self.getBits(word,14,12)
+        rs1 = self.getBits(word,19,15)
+        imm=self.getBits(word,31,12)<<12
+        imm=self.sext(imm,32)
        return rd,funct3,rs1,imm
        
     def decodeS(self,word):
@@ -69,7 +65,7 @@ class CPU:
 
     def decodeU(self,word): #shessaa will do
         rd =self.getBits(word,11, 7)
-        imm=self.sext(self.getBits(word,31,12),20)<<12
+        imm=self.sext(self.(word,31,12),20)<<12
         return rd,imm
 
     def decodeJ(self,word): #shessaa will do
@@ -194,6 +190,8 @@ class CPU:
 
         # B-type  opcode 1100011
         elif opcode==0b1100011:
+            if funct3==0b000 and rs1==0 and rs2==0 and imm==0:
+                return False
             funct3,rs1,rs2,imm=self.decodeB(word)
             a =self.sext(self.rf.read(rs1),32)
             b =self.sext(self.rf.read(rs2),32)
@@ -241,4 +239,4 @@ class CPU:
     def traceLine(self):
         pcBin  =f"0b{format(self.pc,'032b')}"
         regBins=' '.join(f"0b{format(r,'032b')}" for r in self.rf.dump())
-        return f"{pcBin} {regBins} "
+        return f"{pcBin} {regBins}"
