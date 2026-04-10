@@ -34,8 +34,6 @@ class Memory:
 
     def read(self,addr):
         addr &= 0xFFFFFFFF
-        if addr%4!=0:
-            raise SimulatorError(0,f"Memory read misaligned: 0x{addr:08X}")
         if stackMemStart<=addr<=stackMemEnd:
             return self.smem.get(addr,0)
         if dataMemStart<=addr<=dataMemEnd:
@@ -45,8 +43,6 @@ class Memory:
     def write(self,addr,value):
         addr &= 0xFFFFFFFF
         value &= 0xFFFFFFFF
-        if addr%4!=0:
-            raise SimulatorError(0,f"Memory write misaligned: 0x{addr:08X}")
         if stackMemStart<=addr<=stackMemEnd:
             self.smem[addr]=value
         elif dataMemStart<=addr<=dataMemEnd:
