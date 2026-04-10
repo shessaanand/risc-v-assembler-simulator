@@ -76,12 +76,15 @@ class CPU:
         return rd,imm
 
     def step(self):
+        idx = (self.pc >> 2) + 1
         if self.pc % 4 != 0:
-            raise SimulatorError(0, f"Instruction address misaligned: 0x{self.pc:08X}")
-        word = self.mem.fetchInstr(self.pc)
+            raise SimulatorError(idx, f"Instruction address misaligned: 0x{self.pc:08X}")
+        try:
+            word = self.mem.fetchInstr(self.pc)
+        except SimulatorError as e:
+            raise SimulatorError(idx, f"Invalid instruction fetch: {e.message}")
         opcode=self.getBits(word,6,0)
         nextPc=self.pc+4
-        idx=(self.pc>>2)+1
         
         if opcode==0b0110011: 
             rd,funct3,rs1,rs2,funct7=self.decodeR(word)
@@ -117,18 +120,21 @@ class CPU:
         elif opcode==0b0000011: 
             rd,funct3,rs1,imm=self.decodeI(word)
             addr=(self.rf.read(rs1)+imm) & 0xFFFFFFFF
-            if funct3==0b000:
-                result=self.sext(self.mem.readByte(addr),8)
-            elif funct3==0b001:
-                result=self.sext(self.mem.readHalf(addr),16)
-            elif funct3==0b010:
-                result=self.mem.readWord(addr)
-            elif funct3==0b100:
-                result=self.mem.readByte(addr)
-            elif funct3==0b101:
-                result=self.mem.readHalf(addr)
-            else: 
-                raise SimulatorError(idx,f"Unknown load funct3={funct3}")
+            try:
+                if funct3==0b000:
+                    result=self.sext(self.mem.readByte(addr),8)
+                elif funct3==0b001:
+                    result=self.sext(self.mem.readHalf(addr),16)
+                elif funct3==0b010:
+                    result=self.mem.readWord(addr)
+                elif funct3==0b100:
+                    result=self.mem.readByte(addr)
+                elif funct3==0b101:
+                    result=self.mem.readHalf(addr)
+                else: 
+                    raise SimulatorError(idx,f"Unknown load funct3={funct3}")
+            except SimulatorError as e:
+                raise SimulatorError(idx, f"Invalid memory access: {e.message}")
             self.rf.write(rd,result)
 
         elif opcode==0b0010011: 
@@ -171,24 +177,27 @@ class CPU:
             addr=(self.rf.read(rs1)+imm) & 0xFFFFFFFF
             val=self.rf.read(rs2)
 
-            if funct3==0b000: 
-                base= addr & 0xFFFFFFFC
-                old =self.mem.readWord(base)
-                shift=(addr & 3) * 8
-                mask=0xFF << shift
-                new=(old & ~mask) | ((val & 0xFF) << shift)
-                self.mem.write(base,new)
-            elif funct3==0b001:
-                base=addr & 0xFFFFFFFC
-                old =self.mem.readWord(base)
-                shift=(addr & 2)*8
-                mask= 0xFFFF<<shift
-                new=(old & ~mask)|((val & 0xFFFF) << shift)
-                self.mem.write(base,new)
-            elif funct3==0b010:
-                self.mem.write(addr,val)
-            else:
-                raise SimulatorError(idx,f"Unknown store funct3={funct3}")
+            try:
+                if funct3==0b000: 
+                    base= addr & 0xFFFFFFFC
+                    old =self.mem.readWord(base)
+                    shift=(addr & 3) * 8
+                    mask=0xFF << shift
+                    new=(old & ~mask) | ((val & 0xFF) << shift)
+                    self.mem.write(base,new)
+                elif funct3==0b001:
+                    base=addr & 0xFFFFFFFC
+                    old =self.mem.readWord(base)
+                    shift=(addr & 2)*8
+                    mask= 0xFFFF<<shift
+                    new=(old & ~mask)|((val & 0xFFFF) << shift)
+                    self.mem.write(base,new)
+                elif funct3==0b010:
+                    self.mem.write(addr,val)
+                else:
+                    raise SimulatorError(idx,f"Unknown store funct3={funct3}")
+            except SimulatorError as e:
+                raise SimulatorError(idx, f"Invalid memory access: {e.message}")
 
         elif opcode==0b1100011:
             funct3,rs1,rs2,imm=self.decodeB(word)
@@ -232,7 +241,7 @@ class CPU:
             raise SimulatorError(idx,f"Unknown opcode: 0b{opcode:07b}")
 
         if nextPc % 4 != 0:
-            nextPc = nextPc & 0xFFFFFFFC
+            raise SimulatorError(idx, f"PC misaligned: 0x{nextPc:08X}")
             
 
         self.pc=nextPc
