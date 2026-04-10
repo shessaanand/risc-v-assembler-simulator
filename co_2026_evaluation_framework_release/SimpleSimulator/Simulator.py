@@ -21,11 +21,22 @@ def main():
         limit=100000
 
         while ticks<limit:
-            active=processor.step()
-            history.append(processor.traceLine())
-            ticks+=1
-            if not active:
-                break
+            try:
+                active=processor.step()
+                history.append(processor.traceLine())
+                ticks+=1
+                if not active:
+                    break
+            except SimulatorError as e:
+                with open(output_path,'w') as f:
+                    for line in history:
+                        f.write(line+"\n")
+                if readable_path:
+                    with open(readable_path,'w') as f:
+                        for line in history:
+                            f.write(line+"\n")
+                print(f"Error on line {e.lineno}: {e.message}")
+                sys.exit(1)
 
         if ticks>=limit:
             raise SimulatorError(0,"Max step limit reached")
