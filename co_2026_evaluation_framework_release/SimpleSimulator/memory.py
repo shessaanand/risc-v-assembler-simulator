@@ -70,5 +70,5 @@ class Memory:
         for i in range(32):
             addr=dataMemStart+(i*4)
             val =self.dmem.get(addr,0)
-            lines.append(f"0x{addr:08X}:{format(val & 0xFFFFFFFF,'032b')}")
+            lines.append(f"0x{addr:08X}:0b{format(val & 0xFFFFFFFF,'032b')}")
         return lines
