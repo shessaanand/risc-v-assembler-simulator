@@ -167,20 +167,30 @@ class CPU:
         elif opcode==0b0100011:
             funct3,rs1,rs2,imm=self.decodeS(word)
             addr=(self.rf.read(rs1)+imm) & 0xFFFFFFFF
-            if funct3==0b000:
-                val=self.rf.read(rs2)
-                val=val&0xFF
-                self.mem.write(addr,val)
+            val=self.rf.read(rs2)
+
+            if funct3==0b000: 
+                base= addr & 0xFFFFFFFC
+                old =self.mem.readWord(base)
+                shift=(addr & 3) * 8
+                mask=0xFF << shift
+                new=(old & ~mask) | ((val & 0xFF) << shift)
+                self.mem.write(base,new)
+
             elif funct3==0b001:
-                val=self.rf.read(rs2)
-                val=val&0xFFFF
-                self.mem.write(addr,val)
+                base=addr & 0xFFFFFFFC
+                old =self.mem.readWord(base)
+                shift=(addr & 2)*8
+                mask= 0xFFFF<<shift
+                new=(old & ~mask)|((val & 0xFFFF) << shift)
+                self.mem.write(base,new)
+
             elif funct3==0b010:
-                val=self.rf.read(rs2)
                 self.mem.write(addr,val)
+
             else:
                 raise SimulatorError(idx,f"Unknown store funct3={funct3}")
-            
+
         elif opcode==0b1100011:
             funct3,rs1,rs2,imm=self.decodeB(word)
             if funct3==0b000 and rs1==0 and rs2==0 and imm==0:
