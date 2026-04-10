@@ -75,8 +75,10 @@ class CPU:
         imm=self.sext((imm20<<20)|(imm1912<<12)|(imm11<<11)|(imm101<<1),21)
         return rd,imm
 
-    def step(self): #do the corresponding instructions
-        word =self.mem.fetchInstr(self.pc)
+    def step(self):
+        if self.pc % 4 != 0:
+            raise SimulatorError(0, f"Instruction address misaligned: 0x{self.pc:08X}")
+        word = self.mem.fetchInstr(self.pc)
         opcode=self.getBits(word,6,0)
         nextPc=self.pc+4
         idx=(self.pc>>2)+1
@@ -160,7 +162,7 @@ class CPU:
         elif opcode==0b1100111: 
             rd,funct3,rs1,imm=self.decodeI(word)
             retAddr=self.pc+4
-            target=(self.rf.read(rs1)+imm) & 0xFFFFFFFE
+            target=(self.rf.read(rs1)+imm) & 0xFFFFFFFC
             self.rf.write(rd,retAddr)
             nextPc=target & 0xFFFFFFFF
 
@@ -228,6 +230,10 @@ class CPU:
             nextPc=(self.pc+imm) & 0xFFFFFFFF
         else:
             raise SimulatorError(idx,f"Unknown opcode: 0b{opcode:07b}")
+
+        if nextPc % 4 != 0:
+            nextPc = nextPc & 0xFFFFFFFC
+            
 
         self.pc=nextPc
         return True
